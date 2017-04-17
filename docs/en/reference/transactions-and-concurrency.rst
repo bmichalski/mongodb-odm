@@ -1,15 +1,15 @@
 .. Heavily inspired from Doctrine 2 equivalent documentation
 
 Transactions and Concurrency
-============
+============================
 
 Transactions
 ------------
 
 TODO
 
-Concurrency: locking support
----------------
+Concurrency
+-----------
 
 Doctrine MongoDB ODM offers support for Pessimistic- and Optimistic-locking
 strategies natively. This allows to take very fine-grained control
@@ -257,8 +257,8 @@ Doctrine MongoDB ODM currently supports two pessimistic lock modes:
    locks other concurrent requests that attempt to update or lock documents
    in write mode.
 
-How to use Pessimistic Locking?
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Usage
+^^^^^
 
 You can use pessimistic locks in two different scenarios:
 
