@@ -6,7 +6,24 @@ Transactions and Concurrency
 Transactions
 ------------
 
-TODO
+As per the official MongoDB `documentation <https://docs.mongodb.com/manual/core/write-operations-atomicity/#atomicity-and-transactions>`_, in MongoDB,
+"a write operation is atomic on the level of a single document".
+
+Even when updating multiple documents with a single write operation,
+though the modification of each document is atomic,
+the operation as a whole is not, and other operations may interleave.
+
+Simply put, quoting the `FAQ <https://docs.mongodb.com/manual/faq/fundamentals/#does-mongodb-support-transactions>`_: "MongoDB does not support multi-document transactions".
+
+Neither does Doctrine MongoDB ODM.
+
+Limitation
+~~~~~~~~~~
+At the moment, Doctrine MongoDB ODM does not provide any native strategy to emulate multi-document transactions.
+
+Workaround
+~~~~~~~~~~
+To work around this limitation, one could perform a `two phase commits <https://docs.mongodb.com/manual/tutorial/perform-two-phase-commits/>`_.
 
 Concurrency
 -----------
