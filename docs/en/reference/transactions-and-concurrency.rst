@@ -19,6 +19,9 @@ application.
 Optimistic Locking
 ~~~~~~~~~~~~~~~~~~
 
+Approach
+^^^^^^^^
+
 Doctrine has integrated support for automatic optimistic locking
 via a version field. In this approach any document that should be
 protected against concurrent modifications during long-running
@@ -30,6 +33,9 @@ of a long-running conversation, the version of the document
 is added to the query. If no document has been updated,
 a ``LockException`` is thrown, indicating that the document
 has been modified by someone else already.
+
+Document configuration
+^^^^^^^^^^^^^^^^^^^^^^
 
 You designate a version field in a document as follows. In this
 example we'll use an integer.
@@ -73,10 +79,15 @@ Alternatively a ``date`` type can be used:
           type: date
           version: true
 
+Choosing the field type
+"""""""""""""""""""""""
 
 Version numbers, using ``int`` type, (not date) should however be preferred as
 they can not potentially conflict in a highly concurrent
 environment, unlike dates where this is a possibility.
+
+Usage
+"""""
 
 When a version conflict is encountered during
 ``DocumentManager#flush()``, a ``LockException`` is thrown.
@@ -88,7 +99,7 @@ With PHP promoting a share-nothing architecture, the time between
 showing an update form and actually modifying the document can in the
 worst scenario be as long as your applications session timeout. If
 changes happen to the document in that time frame you want to know
-directly when retrieving the document that you will hit a locking exception:
+directly when retrieving the document that you will hit a locking exception.
 
 You can always verify the version of a document during a request
 either when calling ``DocumentManager#find()``:
@@ -143,7 +154,12 @@ Important Implementation Notes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can easily get the optimistic locking workflow wrong if you
-compare the wrong versions. Say you have Alice and Bob editing a
+compare the wrong versions.
+
+Workflow
+""""""""
+
+Say you have Alice and Bob editing a
 hypothetical blog post:
 
 -  Alice reads the headline of the blog post being "Foo", at
@@ -167,7 +183,10 @@ being originally read from the database when Alice performed her
 GET request for the blog post. If this happens you might see lost
 updates you wanted to prevent with Optimistic Locking.
 
-See the example code, The form (GET Request):
+Example code
+""""""""""""
+
+The form (GET Request):
 
 .. code-block:: php
 
@@ -201,7 +220,33 @@ Pessimistic Locking
 Doctrine MongoDB ODM supports Pessimistic Locking.
 Only lockable Documents can be part of a pessimistic lock.
 
-TODO Show how to make a document lockable
+Document configuration
+^^^^^^^^^^^^^^^^^^^^^^
+
+For pessimistic locking to work, a lock field must be configured.
+The lock field must be of type ``int``.
+You designate a lock field in a document as follows.
+
+.. configuration-block::
+
+    .. code-block:: php
+
+        <?php
+        /** @Lock @Field(type="int") */
+        private $lock;
+
+    .. code-block:: xml
+
+        <field fieldName="lock" lock="true" type="int" />
+
+    .. code-block:: yaml
+
+        lock:
+          type: int
+          lock: true
+
+Lock modes
+^^^^^^^^^^
 
 Doctrine MongoDB ODM currently supports two pessimistic lock modes:
 
@@ -211,6 +256,9 @@ Doctrine MongoDB ODM currently supports two pessimistic lock modes:
 -  Pessimistic Read (``\Doctrine\ODM\MongoDB\LockMode::PESSIMISTIC_READ``),
    locks other concurrent requests that attempt to update or lock documents
    in write mode.
+
+How to use Pessimistic Locking?
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 You can use pessimistic locks in two different scenarios:
 
