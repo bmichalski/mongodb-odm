@@ -151,8 +151,8 @@ Be aware that class-names specified in the XML files should be fully qualified.
 Reference
 ---------
 
-1. Version
-----------
+Version
+^^^^^^^
 
 The variable with the ``version`` attribute will be used to store version information, which
 is used for pessimistic and optimistic locking. This is only compatible with
@@ -172,8 +172,8 @@ encouraged to use the :ref:`atomicSet <atomic_set>` or
 will ensure that collections are updated in the same write operation as the
 versioned document.
 
-2. Lock
--------
+Lock
+^^^^
 
 The variable with the ``lock`` attribute will be used to store lock information, which
 is used for pessimistic locking. This is only compatible with
