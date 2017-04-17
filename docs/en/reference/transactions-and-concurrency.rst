@@ -1,0 +1,224 @@
+.. Heavily inspired from Doctrine 2 equivalent documentation
+
+Transactions and Concurrency
+============
+
+Transactions
+------------
+
+TODO
+
+Concurrency: locking support
+---------------
+
+Doctrine MongoDB ODM offers support for Pessimistic- and Optimistic-locking
+strategies natively. This allows to take very fine-grained control
+over what kind of locking is required for your Documents in your
+application.
+
+Optimistic Locking
+~~~~~~~~~~~~~~~~~~
+
+Doctrine has integrated support for automatic optimistic locking
+via a version field. In this approach any document that should be
+protected against concurrent modifications during long-running
+business transactions gets a version field that is either a simple
+number (mapping type: ``int``) or a date (mapping type:
+``date``).
+When changes to such a document are persisted at the end
+of a long-running conversation, the version of the document
+is added to the query. If no document has been updated,
+a ``LockException`` is thrown, indicating that the document
+has been modified by someone else already.
+
+You designate a version field in a document as follows. In this
+example we'll use an integer.
+
+.. configuration-block::
+
+    .. code-block:: php
+
+        <?php
+        /** @Version @Field(type="int") */
+        private $version;
+
+    .. code-block:: xml
+
+        <field fieldName="version" version="true" type="int" />
+
+    .. code-block:: yaml
+
+        version:
+          type: int
+          version: true
+
+
+Alternatively a ``date`` type can be used:
+
+.. configuration-block::
+
+    .. code-block:: php
+
+        <?php
+        /** @Version @Field(type="date") */
+        private $version;
+
+    .. code-block:: xml
+
+        <field fieldName="version" version="true" type="date" />
+
+    .. code-block:: yaml
+
+        version:
+          type: date
+          version: true
+
+
+Version numbers, using ``int`` type, (not date) should however be preferred as
+they can not potentially conflict in a highly concurrent
+environment, unlike dates where this is a possibility.
+
+When a version conflict is encountered during
+``DocumentManager#flush()``, a ``LockException`` is thrown.
+This exception can be caught and handled. Potential responses to a
+``LockException`` are to present the conflict to the user or
+to refresh or reload objects and then retry the update.
+
+With PHP promoting a share-nothing architecture, the time between
+showing an update form and actually modifying the document can in the
+worst scenario be as long as your applications session timeout. If
+changes happen to the document in that time frame you want to know
+directly when retrieving the document that you will hit a locking exception:
+
+You can always verify the version of a document during a request
+either when calling ``DocumentManager#find()``:
+
+.. code-block:: php
+
+    <?php
+    use Doctrine\ODM\MongoDB\LockMode;
+    use Doctrine\ODM\MongoDB\LockException;
+    use Doctrine\ODM\MongoDB\DocumentManager;
+
+    $theDocumentId = 1;
+    $expectedVersion = 184;
+
+    /* @var $dm DocumentManager */
+
+    try {
+        $document = $dm->find('User', $theDocumentId, LockMode::OPTIMISTIC, $expectedVersion);
+
+        // do the work
+
+        $dm->flush();
+    } catch(LockException $e) {
+        echo "Sorry, but someone else has already changed this document. Please apply the changes again!";
+    }
+
+Or you can use ``DocumentManager#lock()`` to find out:
+
+.. code-block:: php
+
+    <?php
+    use Doctrine\ODM\MongoDB\LockMode;
+    use Doctrine\ODM\MongoDB\LockException;
+    use Doctrine\ODM\MongoDB\DocumentManager;
+
+    $theDocumentId = 1;
+    $expectedVersion = 184;
+
+    /* @var $dm DocumentManager */
+
+    $document = $dm->find('User', $theDocumentId);
+
+    try {
+        // assert version
+        $dm->lock($document, LockMode::OPTIMISTIC, $expectedVersion);
+
+    } catch(LockException $e) {
+        echo "Sorry, but someone else has already changed this document. Please apply the changes again!";
+    }
+
+Important Implementation Notes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can easily get the optimistic locking workflow wrong if you
+compare the wrong versions. Say you have Alice and Bob editing a
+hypothetical blog post:
+
+-  Alice reads the headline of the blog post being "Foo", at
+   optimistic lock version 1 (GET Request)
+-  Bob reads the headline of the blog post being "Foo", at
+   optimistic lock version 1 (GET Request)
+-  Bob updates the headline to "Bar", upgrading the optimistic lock
+   version to 2 (POST Request of a Form)
+-  Alice updates the headline to "Baz", ... (POST Request of a
+   Form)
+
+Now at the last stage of this scenario the blog post has to be read
+again from the database before Alice's headline can be applied. At
+this point you will want to check if the blog post is still at
+version 1 (which it is not in this scenario).
+
+Using optimistic locking correctly, you *have* to add the version
+as an additional hidden field (or into the SESSION for more
+safety). Otherwise you cannot verify the version is still the one
+being originally read from the database when Alice performed her
+GET request for the blog post. If this happens you might see lost
+updates you wanted to prevent with Optimistic Locking.
+
+See the example code, The form (GET Request):
+
+.. code-block:: php
+
+    <?php
+    use Doctrine\ODM\MongoDB\DocumentManager;
+
+    /* @var $dm DocumentManager */
+
+    $post = $dm->find('BlogPost', 123456);
+
+    echo '<input type="hidden" name="id" value="' . $post->getId() . '" />';
+    echo '<input type="hidden" name="version" value="' . $post->getCurrentVersion() . '" />';
+
+And the change headline action (POST Request):
+
+.. code-block:: php
+
+    <?php
+    use Doctrine\ODM\MongoDB\DocumentManager;
+
+    /* @var $dm DocumentManager */
+
+    $postId = (int)$_POST['id'];
+    $postVersion = (int)$_POST['version'];
+
+    $post = $dm->find('BlogPost', $postId, \Doctrine\ODM\MongoDB\LockMode::OPTIMISTIC, $postVersion);
+
+Pessimistic Locking
+~~~~~~~~~~~~~~~~~~~
+
+Doctrine MongoDB ODM supports Pessimistic Locking.
+Only lockable Documents can be part of a pessimistic lock.
+
+TODO Show how to make a document lockable
+
+Doctrine MongoDB ODM currently supports two pessimistic lock modes:
+
+-  Pessimistic Write
+   (``\Doctrine\ODM\MongoDB\LockMode::PESSIMISTIC_WRITE``), locks the
+   underlying document for concurrent Read and Write operations.
+-  Pessimistic Read (``\Doctrine\ODM\MongoDB\LockMode::PESSIMISTIC_READ``),
+   locks other concurrent requests that attempt to update or lock documents
+   in write mode.
+
+You can use pessimistic locks in two different scenarios:
+
+1. Using
+   ``DocumentManager#find($className, $id, \Doctrine\ODM\MongoDB\LockMode::PESSIMISTIC_WRITE)``
+   or
+   ``DocumentManager#find($className, $id, \Doctrine\ODM\MongoDB\LockMode::PESSIMISTIC_READ)``
+2. Using
+   ``DocumentManager#lock($document, \Doctrine\ODM\MongoDB\LockMode::PESSIMISTIC_WRITE)``
+   or
+   ``DocumentManager#lock($document, \Doctrine\ODM\MongoDB\LockMode::PESSIMISTIC_READ)``
