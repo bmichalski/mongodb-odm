@@ -175,11 +175,11 @@ Reference
 ---------
 
 1. Version
---------
+----------
 
-The variable with the version property will be used to store version information, which
+The variable with the :code:`version` property will be used to store version information, which
 is used for pessimistic and optimistic locking. This is only compatible with
-integer and date field types, and cannot be combined with :code:`id: true`.
+:code:`int` and :code:`date` field types, and cannot be combined with :code:`id: true`.
 
 .. code-block:: yaml
 
@@ -194,3 +194,16 @@ encouraged to use the :ref:`atomicSet <atomic_set>` or
 :ref:`atomicSetArray <atomic_set_array>` strategies for such collections, which
 will ensure that collections are updated in the same write operation as the
 versioned document.
+
+2. Lock
+-------
+
+The variable with the :code:`lock` property will be used to store lock information, which
+is used for pessimistic locking. This is only compatible with
+:code:`int` field type, and cannot be combined with :code:`id: true`.
+
+.. code-block:: yaml
+
+    lock:
+      type: int
+      lock: true
