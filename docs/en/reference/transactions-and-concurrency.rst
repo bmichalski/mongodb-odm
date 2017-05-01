@@ -6,8 +6,8 @@ Transactions and Concurrency
 Transactions
 ------------
 
-As per the official MongoDB `documentation <https://docs.mongodb.com/manual/core/write-operations-atomicity/#atomicity-and-transactions>`_, in MongoDB,
-"a write operation is atomic on the level of a single document".
+As per the `documentation <https://docs.mongodb.com/manual/core/write-operations-atomicity/#atomicity-and-transactions>`_, MongoDB
+write operations are "atomic on the level of a single document".
 
 Even when updating multiple documents with a single write operation,
 though the modification of each document is atomic,
@@ -23,7 +23,7 @@ At the moment, Doctrine MongoDB ODM does not provide any native strategy to emul
 
 Workaround
 ~~~~~~~~~~
-To work around this limitation, one could perform a `two phase commits <https://docs.mongodb.com/manual/tutorial/perform-two-phase-commits/>`_.
+To work around this limitation, one could perform `two phase commits <https://docs.mongodb.com/manual/tutorial/perform-two-phase-commits/>`_.
 
 Concurrency
 -----------
