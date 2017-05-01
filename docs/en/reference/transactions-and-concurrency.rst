@@ -40,22 +40,21 @@ Approach
 ^^^^^^^^
 
 Doctrine has integrated support for automatic optimistic locking
-via a version field. In this approach any document that should be
+via a version field. Any document that should be
 protected against concurrent modifications during long-running
 business transactions gets a version field that is either a simple
 number (mapping type: ``int``) or a date (mapping type:
 ``date``).
-When changes to such a document are persisted at the end
-of a long-running conversation, the version of the document
-is added to the query. If no document has been updated,
+When changes are persisted at the end of a long-running conversation,
+the version of the document is added to the query. If no document has been updated,
 a ``LockException`` is thrown, indicating that the document
-has been modified by someone else already.
+has already been modified.
 
 Document configuration
 ^^^^^^^^^^^^^^^^^^^^^^
 
 You designate a version field in a document as follows. In this
-example we'll use an integer.
+example we'll use an integer (``int`` type).
 
 .. configuration-block::
 
@@ -76,7 +75,7 @@ example we'll use an integer.
           version: true
 
 
-Alternatively a ``date`` type can be used:
+Alternatively ``date`` type can be used:
 
 .. configuration-block::
 
@@ -99,9 +98,9 @@ Alternatively a ``date`` type can be used:
 Choosing the field type
 """""""""""""""""""""""
 
-Version numbers, using ``int`` type, (not date) should however be preferred as
-they can not potentially conflict in a highly concurrent
-environment, unlike dates where this is a possibility.
+When using ``date`` type in a highly concurrent environment, two documents could be created with the same date
+and create a conflict.
+This cause of conflict can be avoided by using ``int`` type.
 
 Usage
 """""
@@ -118,8 +117,7 @@ worst scenario be as long as your applications session timeout. If
 changes happen to the document in that time frame you want to know
 directly when retrieving the document that you will hit a locking exception.
 
-You can always verify the version of a document during a request
-either when calling ``DocumentManager#find()``:
+You can verify the version of a document during a request either when calling ``DocumentManager#find()``:
 
 .. code-block:: php
 
@@ -223,19 +221,21 @@ And the change headline action (POST Request):
 
     <?php
     use Doctrine\ODM\MongoDB\DocumentManager;
+    use Doctrine\ODM\MongoDB\LockMode;
 
     /* @var $dm DocumentManager */
 
     $postId = (int)$_POST['id'];
     $postVersion = (int)$_POST['version'];
 
-    $post = $dm->find('BlogPost', $postId, \Doctrine\ODM\MongoDB\LockMode::OPTIMISTIC, $postVersion);
+    $post = $dm->find('BlogPost', $postId, LockMode::OPTIMISTIC, $postVersion);
 
 Pessimistic Locking
 ~~~~~~~~~~~~~~~~~~~
 
 Doctrine MongoDB ODM supports Pessimistic Locking.
-Only lockable Documents can be part of a pessimistic lock.
+There is no native MongoDB support for pessimistic locking.
+The Doctrine implementation uses a "lock" field, that you have to configure if you wish to use pessimistic locking.
 
 Document configuration
 ^^^^^^^^^^^^^^^^^^^^^^
